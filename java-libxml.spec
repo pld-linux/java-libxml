@@ -1,114 +1,81 @@
-# Use rpmbuild --without gcj to disable native bits
-%define with_gcj %{!?_without_gcj:1}%{?_without_gcj:0}
-%define origname libxml
-
+%define		origname libxml
+%include	/usr/lib/rpm/macros.java
 Summary:	Namespace aware SAX-Parser utility library
-Name:		pentaho-libxml
+Name:		java-pentaho-%{origname}
 Version:	1.1.3
-Release:	2%{?dist}
+Release:	0.1
 License:	LGPL v2+
 Group:		Libraries
 Source0:	http://downloads.sourceforge.net/jfreereport/%{origname}-%{version}.zip
-URL:		http://reporting.pentaho.org/
-BuildRequires:	jpackage-utils
-BuildRequires:	libbase
-BuildRequires:	libloader
-BuildRequires:	ant
-BuildRequires:	ant-contrib
-BuildRequires:	ant-nodeps
-BuildRequires:	java-devel
-Buildroot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
-Requires:	java
-Requires:	jpackage-utils
-Requires:	libbase >= 1.1.2
-Requires:	libloader >= 1.1.2
-%if %{with_gcj}
-BuildRequires:	java-gcj-compat-devel >= 1.0.31
-Requires(post):	java-gcj-compat >= 1.0.31
-Requires(postun):	java-gcj-compat >= 1.0.31
-%else
-BuildArch:	noarch
-%endif
+# Source0-md5:	8008caa6819ed7a03eb908cc989a65b9
 Patch0:		libxml-1.1.2-build.patch
+URL:		http://reporting.pentaho.org/
+BuildRequires:	ant
+#BuildRequires:	ant-contrib
+BuildRequires:	ant-nodeps
+BuildRequires:	jdk
+BuildRequires:	jpackage-utils
+#BuildRequires:	libbase
+#BuildRequires:	libloader
+BuildRequires:	rpmbuild(macros) >= 1.553
+Requires:	jpackage-utils
+#Requires:	libbase >= 1.1.2
+#Requires:	libloader >= 1.1.2
+BuildArch:	noarch
+BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
 Pentaho LibXML is a namespace aware SAX-Parser utility library. It
 eases the pain of implementing non-trivial SAX input handlers.
 
 %package javadoc
-Summary:	Javadoc for %{name}
+Summary:	Javadoc for libxml
 Group:		Documentation
 Requires:	%{name} = %{version}-%{release}
 Requires:	jpackage-utils
-%if %{with_gcj}
-BuildArch:	noarch
-%endif
 
 %description javadoc
-Javadoc for %{name}.
+Javadoc for libxml.
 
 %prep
-%setup -q -c
-%patch0 -p1 -b .build
-find . -name "*.jar" -exec rm -f {} \;
-mkdir -p lib
-build-jar-repository -s -p lib commons-logging-api libbase libloader
-cd lib
-ln -s %{_javadir}/ant ant-contrib
+%setup -qc
+%patch0 -p1
+
+%undos README.txt licence-LGPL.txt ChangeLog.txt
+
+find . -name "*.jar" | xargs rm -v
+
+ln -s %{_javadir}/ant lib/ant-contrib
 
 %build
+mkdir -p lib
+build-jar-repository -s -p lib commons-logging-api libbase libloader
 %ant jar javadoc
-for file in README.txt licence-LGPL.txt ChangeLog.txt; do
-	tr -d '\r' < $file > $file.new
-	mv $file.new $file
-done
 
 %install
 rm -rf $RPM_BUILD_ROOT
-
 install -d $RPM_BUILD_ROOT%{_javadir}
-cp -p ./dist/%{origname}-%{version}.jar $RPM_BUILD_ROOT%{_javadir}
-pushd $RPM_BUILD_ROOT%{_javadir}
-ln -s %{origname}-%{version}.jar %{origname}.jar
-popd
+cp -p dist/%{origname}-%{version}.jar $RPM_BUILD_ROOT%{_javadir}
+ln -s %{origname}-%{version}.jar $RPM_BUILD_ROOT%{_javadir}/%{origname}.jar # ghost symlink
 
 install -d $RPM_BUILD_ROOT%{_javadocdir}/%{origname}
-cp -rp bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{origname}
-%if %{with_gcj}
-%{_bindir}/aot-compile-rpm
-%endif
+cp -a bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{origname}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
-%if %{with_gcj}
-if [ -x %{_bindir}/rebuild-gcj-db ]
-then
-  %{_bindir}/rebuild-gcj-db
-fi
-%endif
-
-%postun
-%if %{with_gcj}
-if [ -x %{_bindir}/rebuild-gcj-db ]
-then
-  %{_bindir}/rebuild-gcj-db
-fi
-%endif
+%post javadoc
+ln -nfs %{origname}-%{version} %{_javadocdir}/%{origname}
 
 %files
 %defattr(644,root,root,755)
 %doc licence-LGPL.txt README.txt ChangeLog.txt
 %{_javadir}/%{origname}-%{version}.jar
 %{_javadir}/%{origname}.jar
-%if %{with_gcj}
-%attr(-,root,root) %{_libdir}/gcj/%{name}
-%endif
 
+%if %{with javadoc}
 %files javadoc
 %defattr(644,root,root,755)
-%{_javadocdir}/%{origname}
-
-BuildRequires:  jpackage-utils
-BuildRequires:  rpmbuild(macros) >= 1.300
+%{_javadocdir}/%{origname}-%{version}
+%ghost %{_javadocdir}/%{origname}
+%endif
