@@ -3,7 +3,6 @@
 %bcond_without	javadoc		# don't build javadoc
 
 %define		srcname libxml
-%include	/usr/lib/rpm/macros.java
 Summary:	Namespace aware SAX-Parser utility library
 Name:		java-%{srcname}
 Version:	1.1.3
