@@ -42,7 +42,7 @@ Javadoc for libxml.
 
 %prep
 %setup -qc
-%patch0 -p1
+%patch -P0 -p1
 
 %undos README.txt licence-LGPL.txt ChangeLog.txt
 
